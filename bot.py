@@ -92,8 +92,6 @@ class Robot(comms.Bot):
             request_number INTEGER,
             subreddits TEXT,
             warnings INTEGER)''')
-        self.cur.execute('''INSERT INTO Users VALUES (?, ?, ?, ?)''',
-                         (196664644113268736, 0, 'pics', 0))
         self.conn.commit()
 
     async def create_connections(self):
