@@ -26,3 +26,7 @@ Subscription-like service bot where there are no fees for getting intervaled mes
 
 #### v1.0:
 * Literally everything 
+
+## Credits:
+* Python API wrapper: [discord.py](https://discordpy.readthedocs.io/en/latest/index.html) 
+* Arist (NSFW WARNING) [Nanoless](https://www.pixiv.net/member_illust.php?id=3417258)
