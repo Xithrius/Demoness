@@ -20,20 +20,24 @@ import sqlite3
 import logging
 import asyncio
 import sys
+import collections
+import json
+import os
+import aiohttp
 
 from discord.ext import commands as comms
 import discord
 
-from modules.output import path, cs
+from modules.output import path, cs, now
 
 
-def logger():
-    logger = logging.getLogger('discord')
-    logger.setLevel(logging.DEBUG)
-    handler = logging.FileHandler(filename=path('repository', 'logs', 'discord.log'),
-                                encoding='utf-8', mode='w')
-    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-    logger.addHandler(handler)
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename=path('tmp', 'discord.log'),
+                            encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 
 class Robot(comms.Bot):
@@ -51,43 +55,62 @@ class Robot(comms.Bot):
                                  object_hook=lambda d: collections.namedtuple(
                                  "config", d.keys())(*d.values()))
 
-        #: Setting embed color
-        self.ec = 0xc27c0e
-
-        #: Creating background task for testing services
-        self.loop.create_task(self.load_services())
-
         #: Checking if database exists. If database does not exist, tables are created for the requesters
+        self.db_path = path('data', 'requests.db')
+        
         if not os.path.isfile(self.db_path):
-            self.conn = sqlite3.connect(path('data', 'requests.db'))
+            self.conn = sqlite3.connect(self.db_path)
 
         #: Create async loop
         self.loop = asyncio.get_event_loop()
 
         future = asyncio.gather()
-        self.loop.create_task(self.create_tasks())
+        self.loop.create_task(self.create_connections())
         self.loop.run_until_complete(future)
 
     """ subclass-specific tasks """
 
-    async def create_tasks(self):
+    async def create_connections(self):
         """Session and database connections while testing service status.
 
         Raises:
             Errors depending on connection success/fail
 
         """
-        await self.check_database()
-
         self.session = aiohttp.ClientSession()
-        cs.r('Session established successfully.')
+        cs.s('Client session created.')
 
-        self.db_connection = asyncio.get_running_loop()
-        await self.db_connection.create_task(self.check_database())
+    """ Subclass-specific functions """
 
-    """ subclass-specific tasks """
-    
+    def embed(self, title, url, desc):
+        """Automating the creation of a discord.Embed with modifications.  
+        
+        Returns:
+            An embed object
+
+        """
+        desc.append(f'[`link`]({url})')
+        e = discord.Embed(title='', description='\n'.join(y for y in desc),
+                          timestamp=now(), colour=0xc27c0e)
+        e.set_footer(text=f'discord.py v{discord.__version__}',
+                     icon_url='https://i.imgur.com/RPrw70n.png')
+        return e
+
     """ Events """
+
+    async def on_ready(self):
+        """Bot event is activated once login is successful.
+
+        Returns:
+            Success or failure message(s)
+
+        Raises:
+            An exception as e if something went wrong while logging in.
+
+        """
+        await self.change_presence(status=discord.ActivityType.playing,
+                                   activity=discord.Game('With messages'))
+        cs.r('Startup completed.')
 
     async def close(self):
         """ Safely closes connections
@@ -97,8 +120,8 @@ class Robot(comms.Bot):
 
         """
         try:
-            self.session.close()
-            await self.conn.close()
+            await self.session.close()
+            self.conn.close()
         except Exception:
             pass
         await super().close()
@@ -170,9 +193,7 @@ class MainCog(comms.Cog):
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == 'log':
-        logger()
-    bot = Robot(command_prefix=comms.when_mentioned_or('<'),
+    bot = Robot(command_prefix=comms.when_mentioned_or('.'),
                 case_insensitive=True)
     bot.add_cog(MainCog(bot))
     bot.run(bot.config.discord, bot=True, reconnect=True)
