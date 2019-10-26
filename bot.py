@@ -60,12 +60,26 @@ class Robot(comms.Bot):
         
         if not os.path.isfile(self.db_path):
             self.conn = sqlite3.connect(self.db_path)
+            self.cur = self.conn.cursor()
+            self.cur.execute('''CREATE TABLE IF NOT EXISTS Requests(
+                id INTEGER
+                title TEXT,
+                subreddit TEXT,
+                url TEXT,
+                upvotes INTEGER)''')
+            self.cur.execute('''CREATE TABLE IF NOT EXISTS Users(
+                id INTEGER,
+                request_number INTEGER,
+                subreddits TEXT,
+                warnings INTEGER)''')
+            self.conn.commit()
 
         #: Create async loop
         self.loop = asyncio.get_event_loop()
 
         future = asyncio.gather()
         self.loop.create_task(self.create_connections())
+        self.loop.create_task(self.check_subreddits())
         self.loop.run_until_complete(future)
 
     """ subclass-specific tasks """
@@ -79,6 +93,9 @@ class Robot(comms.Bot):
         """
         self.session = aiohttp.ClientSession()
         cs.s('Client session created.')
+
+    async def check_subreddits(self):
+        user_requests = self.cur.fetchall('''SELECT * FROM Users''')
 
     """ Subclass-specific functions """
 
