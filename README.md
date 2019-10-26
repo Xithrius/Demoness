@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="/images/icon.png"/>
+    <img src="/images/icon.jpg"/>
 </p>
 
 <h1 align="center">Demoness v1.0</h1>
