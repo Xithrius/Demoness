@@ -20,7 +20,11 @@ def path(*filepath):
         A Path joined by the operating system's seperator.
 
     """
-    return f'{os.path.abspath(os.path.dirname(sys.argv[0]))}{os.sep}{(os.sep).join(str(y) for y in filepath)}'
+    lst = [
+        os.path.abspath(os.path.dirname(sys.argv[0])),
+        (os.sep).join(str(y) for y in filepath)
+    ]
+    return (os.sep).join(str(s) for s in lst)
 
 
 class cs:

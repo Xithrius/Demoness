@@ -19,6 +19,7 @@ import collections
 import json
 import aiohttp
 import traceback
+import datetime
 
 from discord.ext import commands as comms
 import discord
@@ -374,17 +375,34 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
 
         TODO:
             - [ ] Insert request into Request database, update every hour.
-            - [ ] Insert/update info for User row
+            - [ ] Insert/update info for User row.
+            - [ ] Check for request number at the very start.
+            - [ ] Insert information into Users table
 
         """
-        # if 'until' in interval:
-        #     interval = interval[interval.index('until') + 6]
-        # else:
-        #     interval = []
+        if 'until' in interval:
+            interval = interval[interval.index('until') + 6]
 
-        # n = now()
-        # self.bot.cur.execute('''INSERT INTO Requests VALUES (?)''', (,))
-        # self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
+        else:
+            interval = []
+        if ('r/', '/r/') in subreddit:
+            subreddit = subreddit[1:]
+
+        url = f'https://www.reddit.com/r/subreddit/top/.json?t=day'
+
+        async with self.bot.session.get(url) as r:
+            if r.status == 200:
+                j = await r.json()
+                j = j['data']['children'][0]['data']
+            else:
+                await ctx.send(cs.css(f'Reddit requester failed. Status code {r.status}'))
+        upvotes = j['ups']
+        image_url = j['url']
+        n = int(datetime.datetime.timestamp(now()))
+        last_id = len(self.bot.cur.execute('''SELECT id FROM Requests''')) + 1
+        self.bot.cur.execute('''INSERT INTO Requests VALUES (?, ?, ?, ?, ?)''',
+                             (last_id, subreddit, image_url, upvotes, n))
+        self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
 
 
 if __name__ == "__main__":

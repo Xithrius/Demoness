@@ -18,10 +18,6 @@
     <a href="#changelog">Changelog</a>
 </p>
 
-
-## Information:
-Subscription-like service bot where there are no fees for getting intervaled messages from subreddit.
-
 ## Changelog:
 
 #### v1.0:
