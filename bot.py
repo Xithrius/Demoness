@@ -37,11 +37,11 @@ logger.addHandler(handler)
 
 class Robot(comms.Bot):
     """Subclassing comms.Bot to set attributes and tasks
-    
+
     Attributes:
         config (dict): Recursive attribute setter from config/config.json
-        loop (class):  
-    
+        loop (class): Asyncio loop for tasks.
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -87,7 +87,8 @@ class Robot(comms.Bot):
             title TEXT,
             subreddit TEXT,
             url TEXT,
-            upvotes INTEGER)''')
+            upvotes INTEGER,
+            last_update INTEGER)''')
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Users(
             id INTEGER,
             request_number INTEGER,
@@ -188,11 +189,14 @@ class Robot(comms.Bot):
             Void, since that's where the message goes.
 
         """
-        try:
-            await asyncio.sleep(5)
-            await ctx.message.delete()
-        except discord.errors.Forbidden:
-            pass
+        # if ctx.command == 'exit':
+        #     return
+        # try:
+        #     await asyncio.sleep(5)
+        #     await ctx.message.delete()
+        # except discord.errors.Forbidden:
+        #     pass
+        pass
 
     """ Subclassed functions """
 
@@ -222,39 +226,40 @@ class Robot(comms.Bot):
         return True
 
 
-class MyHelpCommand(commands.MinimalHelpCommand):
+class Custom_Help(comms.MinimalHelpCommand):
     """Custom help command.
 
     Attributes:
         Many things.
-    
+
     """
 
     def get_command_signature(self, command):
-        return '{0.clean_prefix}{1.qualified_name} {1.signature}'.format(self, command)
+        return '{0.clean_prefix}{1.qualified_name} {1.signature}'.format(
+            self, command)
 
 
-class Mod(comms.Cog):
+class Mod(comms.Cog, command_attrs=dict(hidden=True, case_insensitive=True)):
     """Moderation of server(s)
 
     Attributes:
         comms.Bot
-    
+
     """
 
     def __init__(self, bot):
-        
-        #: Robot(comms.Bot) as a class attribute 
+
+        #: Robot(comms.Bot) as a class attribute.
         self.bot = bot
 
         #: Help command loading for cog
         self._original_help_command = bot.help_command
-        bot.help_command = MyHelpCommand()
+        bot.help_command = Custom_Help()
         bot.help_command.cog = self
 
     def cog_unload(self):
         """Makes sure that items are unloaded correctly
-        
+
         Returns & raises:
             Nothing, unless there is an error
 
@@ -301,12 +306,12 @@ class Mod(comms.Cog):
         pass
 
     @comms.command()
-    async def tempmute(self, ctx, duration)
+    async def tempmute(self, ctx, duration):
         """ """
         pass
 
     @comms.command()
-    async def unban(self, ctx, user: int) - discord.Message:
+    async def unban(self, ctx, user: int):
         """ """
         pass
 
@@ -321,7 +326,7 @@ class Mod(comms.Cog):
         pass
 
 
-class Main(comms.Cog):
+class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
     """Commands needed for bot to run properly.
 
     Attributes:
@@ -330,18 +335,18 @@ class Main(comms.Cog):
     """
 
     def __init__(self, bot):
-        
-        #: Robot(comms.Bot) as a class attribute 
+
+        #: Robot(comms.Bot) as a class attribute
         self.bot = bot
 
         #: Help command loading for cog
         self._original_help_command = bot.help_command
-        bot.help_command = MyHelpCommand()
+        bot.help_command = Custom_Help()
         bot.help_command.cog = self
 
     def cog_unload(self):
         """Makes sure that items are unloaded correctly
-        
+
         Returns & raises:
             Nothing, unless there is an error
 
@@ -351,8 +356,12 @@ class Main(comms.Cog):
     """ Commands """
 
     @comms.command()
-    async def subscribe(self, ctx, subreddit, ):
+    async def subscribe(self, ctx, subreddit, *, interval: str):
         """Subscribes to a specific subreddit.
+
+        Args:
+            subreddit (str): The subreddit a user wants to subscribe to,
+            interval (str): A given time or a timer.
 
         Returns:
             Success if the user isn't already subscribed.
@@ -360,22 +369,25 @@ class Main(comms.Cog):
         Raises:
             Faliure message if the subreddit cannot be found.
 
-        Requests: id, subreddit, url, upvotes
+        Requests: id, subreddit, url, upvotes, date
         Users: id, request_number, subreddits, warnings
 
         TODO:
-            - [ ] Insert request into Request database, update at least once a day for now
-            - [ ] Insert/update info for User row 
+            - [ ] Insert request into Request database, update every hour.
+            - [ ] Insert/update info for User row
 
         """
-        n = now()
-        
-        self.bot.cur.execute('''INSERT INTO Requests VALUES (?)''',  (,))
-        self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
+        # if 'until' in interval:
+        #     interval = interval[interval.index('until') + 6]
+        # else:
+        #     interval = []
+
+        # n = now()
+        # self.bot.cur.execute('''INSERT INTO Requests VALUES (?)''', (,))
+        # self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
 
 
 if __name__ == "__main__":
     bot = Robot(command_prefix=comms.when_mentioned_or('.'),
                 case_insensitive=True)
     bot.run(bot.config.discord, bot=True, reconnect=True)
-
