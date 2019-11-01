@@ -20,6 +20,7 @@ import json
 import aiohttp
 import traceback
 import datetime
+import os
 
 from discord.ext import commands as comms
 import discord
@@ -356,7 +357,7 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
 
     """ Commands """
 
-    @comms.command()
+    @comms.command(enabled=False)
     async def subscribe(self, ctx, subreddit, *, interval: str):
         """Subscribes to a specific subreddit.
 
@@ -395,14 +396,25 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
                 j = await r.json()
                 j = j['data']['children'][0]['data']
             else:
-                await ctx.send(cs.css(f'Reddit requester failed. Status code {r.status}'))
+                await ctx.send(cs.css(
+                    f'Requester failed: {r.status}.'))
         upvotes = j['ups']
         image_url = j['url']
         n = int(datetime.datetime.timestamp(now()))
         last_id = len(self.bot.cur.execute('''SELECT id FROM Requests''')) + 1
         self.bot.cur.execute('''INSERT INTO Requests VALUES (?, ?, ?, ?, ?)''',
                              (last_id, subreddit, image_url, upvotes, n))
-        self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
+        # self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
+
+    @comms.command()
+    async def send_mass(self, ctx, folder, user: discord.User):
+        if os.path.isdir(path('tmp', folder)):
+            for f in os.listdir(path('tmp', folder)):
+                try:
+                    await user.send(file=discord.File(path('tmp', folder, f)))
+                except discord.errors.HTTPException:
+                    pass
+                await asyncio.sleep(1.25)
 
 
 if __name__ == "__main__":
