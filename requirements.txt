@@ -1,6 +1,4 @@
 discord.py
-aiohttp==3.3.0
 datetime
 bs4
-collections
 

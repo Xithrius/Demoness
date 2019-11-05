@@ -25,6 +25,7 @@ import datetime
 import os
 import bs4
 import functools
+import re
 
 from discord.ext import commands as comms
 import discord
@@ -182,6 +183,21 @@ class Robot(comms.Bot):
 	    if re.search(r"chan\.sankakucomplex\.com\/post", pg) and dic.get('Sankaku') == None:
 		dic.update({'Sankaku': pg})
 
+    async def interval_parser(self, interval: str):
+        """Retrieves a datetime from a string containing certien dates
+
+        Args:
+            interval (str): unparsed string of human date
+
+        Returns:
+            t (datetime): final date until time complete.
+
+        Raises:
+            ValueError: parsing cannot be completed.
+
+        """
+        pass
+
     """ Events """
 
     async def on_ready(self):
@@ -194,8 +210,8 @@ class Robot(comms.Bot):
             An exception as e if something went wrong while logging in.
 
         """
-        await self.change_presence(status=discord.ActivityType.playing,
-                                   activity=discord.Game('with messages'))
+        await self.change_presence(status=discord.ActivityType.watching,
+                                   activity=discord.Game("Over uncultured swines"))
         cs.r('Startup completed.')
 
     async def on_command_error(self, ctx, error):
@@ -428,8 +444,7 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
             - [ ] Insert information into Users table
 
         """
-        if 'until' in interval:
-            interval = interval[interval.index('until') + 6]
+        t = await self.bot.interval_parser(interval)
 
         else:
             interval = []
@@ -454,17 +469,7 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
         # self.bot.cur.execute('''INSERT INTO Users VALUES (?)''', (,))
 
     @comms.command()
-    async def send_mass(self, ctx, folder, user: discord.User):
-        if os.path.isdir(path('tmp', folder)):
-            for f in os.listdir(path('tmp', folder)):
-                try:
-                    await user.send(file=discord.File(path('tmp', folder, f)))
-                except discord.errors.HTTPException:
-                    pass
-                await asyncio.sleep(1.25)
-
-    @comms.command()
-    async def reddit(self, ctx, status, interval, subreddit):
+    async def reddit(self, ctx, status='hot', interval='week', subreddit=None):
         """Sending 5 posts from a subreddit at a set interval and status.
 
         Args:
@@ -481,38 +486,39 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
         """
         statuses = ['top', 'hot']
         if status.lower() not in statuses:
-            raise ValueError('Set status is not defined as "top" or "hot".')
+            raise ValueError(f'Set status is not in options of {", ".join(str(y) for y in statuses)}.')
 
         intervals = ['today', 'week', 'month', 'year', 'all']
         if interval.lower() not in intervals:
-            raise ValueError('')
+            raise ValueError(f'Set interval is not in options of {", ".join(str(y) for y in intervals)}')
         
         if ['r/', '/r/'] in subreddit:
-            subreddit = subreddit[subreddit.index('/'):]
+            subreddit = subreddit[subreddit.index('/') + 1:]
+
+        if subreddit is None:
+            subreddit = 'all'
 
         url = f'https://www.reddit.com/r/{subreddit}/{status}/.json?t={interval}'
 
-        await ctx.send('Sending 5 posts...')
-        await asyncio.sleep(2)
-
-        for post in range(info):
-            await ctx.send('')
-            await asyncio.sleep(1)
+        e = self.bot.embed(title,      
 
     @comms.command()
-    async def sauce(self, ctx, url: None):
-        """Gets the SAUCE for an image (nsfw, mostly)
+    async def source(self, ctx, url: None):
+        """Gets the source for an image
 
         Args:
             url (str): if none, url is extracted from context.
         
         Returns:
-            An embed with the sauce(s) of the image
+            An embed with the source(s) of the image.
 
         Raises:
             An error when sauce cannot be found or server cannot be reached.
 
         """
+        if len(ctx.message.attachments) > 1:
+            raise 
+        
         url = f'http://saucenao.com/search.php?db=999&url={url}'
         
         async with self.bot.session.get(url) as r:
