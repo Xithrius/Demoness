@@ -142,14 +142,45 @@ class Robot(comms.Bot):
                      icon_url='https://i.imgur.com/RPrw70n.png')
         return e
 
-    def html_parser(self, url):
+    def html_parser(self, soup):
         """Asynchronously uses BeautifulSoup to parse html
+        Source: https://github.com/MistressMamiya/hsauce_bot/blob/master/get_source.py
 
         Returns:
             A Dictionary of items
 
         """
-        pass
+	dic = {}
+
+	creator = re.search(r"Creator: <\/strong>([\w\d\s\-_.*()\[\]]*)<br\/>", str(soup))
+	if creator and dic.get('Creator') == None:
+	    dic.update({'Creator': creator.group(1)})
+	material = re.search(r"Material: <\/strong>([\w\d\s\-_.*()\[\]]*)<br\/>", str(soup))
+	if material and dic.get('Material') == None:
+	    dic.update({'Material': material.group(1)})
+	author = re.search(r'Author: <\/strong><[\w\s\d="\-_\.\/\?:]*>([\w\d\s\-_.*()\[\]]*)<\/a>', str(soup))
+	if author and dic.get('Author') == None:
+	    dic.update({'Author': author.group(1)})
+	member = re.search(r'Member: <\/strong><[\w\s\d="\-_\.\/\?:]*>([\w\d\s\-_.*()\[\]]*)<\/a>', str(soup))
+	if member and dic.get('Member') == None:
+	    dic.update({'Member': member.group(1)})
+
+	for link in soup.find_all('a'):
+	    pg = link.get('href')
+    	    if re.search(r"[\w]+\.deviantart\.com", pg) and dic.get('DeviantArt_art') == None:
+                dic.update({'DeviantArt_art': pg})
+	    if re.search(r"deviantart\.com\/view\/", pg) and dic.get('DeviantArt_src') == None:
+	        dic.update({'DeviantArt_src': pg})
+	    if re.search(r"pixiv\.net\/member\.", pg) and dic.get('Pixiv_art') == None:
+	        dic.update({'Pixiv_art': pg})
+            if re.search(r"pixiv\.net\/member_illust", pg) and dic.get('Pixiv_src') == None:
+	    	dic.update({'Pixiv_src': pg})
+	    if re.search(r"gelbooru\.com\/index\.php\?page", pg) and dic.get('Gelbooru') == None:
+		dic.update({'Gelbooru': pg})
+            if re.search(r"danbooru\.donmai\.us\/post\/", pg) and dic.get('Danbooru') == None:
+		dic.update({'Danbooru': pg})
+	    if re.search(r"chan\.sankakucomplex\.com\/post", pg) and dic.get('Sankaku') == None:
+		dic.update({'Sankaku': pg})
 
     """ Events """
 
