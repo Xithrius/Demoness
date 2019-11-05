@@ -52,7 +52,7 @@ class Robot(comms.Bot):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(command_prefix=comms.when_mentioned_or('.'))
+        super().__init__(*args, **kwargs)
 
         #: Opening config file to get settings and service details
         with open(path('config', 'config.json'), 'r', encoding='utf8') as f:
@@ -145,10 +145,16 @@ class Robot(comms.Bot):
 
     def html_parser(self, soup):
         """Asynchronously uses BeautifulSoup to parse html
-        Source: https://github.com/MistressMamiya/hsauce_bot/blob/master/get_source.py
+        Source: https://github.com/MistressMamiya/hsauce_bot/blob/master/get_source.py#L5-L40
+
+        Args:
+            soup (bs4.BeautifulSoup): html to be parsed
 
         Returns:
             A Dictionary of items
+
+        Raises:
+            Nothing, unless something cannot be parsed.
 
         """
 	dic = {}
@@ -183,20 +189,30 @@ class Robot(comms.Bot):
 	    if re.search(r"chan\.sankakucomplex\.com\/post", pg) and dic.get('Sankaku') == None:
 		dic.update({'Sankaku': pg})
 
-    async def interval_parser(self, interval: str):
+    async def interval_parser(self, interval: str) -> datetime.datetime:
         """Retrieves a datetime from a string containing certien dates
+        Source: https://github.com/Priultimus/flux-discordbot/blob/master/ui/general.py#L18-L28
 
         Args:
             interval (str): unparsed string of human date
 
         Returns:
-            t (datetime): final date until time complete.
+            t (datetime.datetime): final date until time is complete.
 
         Raises:
             ValueError: parsing cannot be completed.
 
         """
-        pass
+        t = re.match(r"(?:(?P<weeks>\d+)w)?(?:\s+)?(?:(?P<days>\d+)d)?(?:\s+)?(?:(?P<hours>\d+)h)?(?:\s+)?(?:(?P<minutes>\d+)m)?(?:\s+)?(?:(?P<seconds>\d+)s)?", interval)
+        t = t.groupdict()
+        for k, v in t.items():
+            if t[k] is None:
+                t[k] = 0
+        for k, v in t.items():
+            t[k] = int(v)
+        t = datetime.timedelta(weeks=t.get("weeks"), days=t.get("days"), hours=t.get("hours"), minutes=t.get("minutes"), seconds=t.get("seconds"))
+        t = datetime.datetime.now() - t
+        return t
 
     """ Events """
 
@@ -478,7 +494,7 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
             subreddit (str): The subreddit that the posts should be found in.
 
         Returns:
-            5 posts within 5 seconds, to not go above the API rate.
+            An embed with an image and description of the post.
 
         Raises:
             Possible errors if subreddit cannot be found.
@@ -500,7 +516,18 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
 
         url = f'https://www.reddit.com/r/{subreddit}/{status}/.json?t={interval}'
 
-        e = self.bot.embed(title,      
+        async with self.bot.session.get(url) as r:
+            assert r.status == 200
+            I = await r.json()
+            I = I['data']['children'][0]['data']
+
+        desc = [
+            I['author'],
+            I['ups'],
+            I['permalink']
+        ]
+
+        e = self.bot.embed(I['title'], I['url'], desc)     
 
     @comms.command()
     async def source(self, ctx, url: None):
@@ -517,7 +544,7 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
 
         """
         if len(ctx.message.attachments) > 1:
-            raise 
+            raise ValueError('Cannot get more than one image at a time.')
         
         url = f'http://saucenao.com/search.php?db=999&url={url}'
         
@@ -528,6 +555,10 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
             info = await self.bot.loop.run_in_executor(None, func)
         
         e = self.bot.embed
+
+    @comms.command()
+    async def dparse(self, ctx, interval: str):
+        t = self.bot.parse_interval(interval)
 
 
 if __name__ == "__main__":
