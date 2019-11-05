@@ -1,3 +1,5 @@
+#!/usr/bin/python3.7
+
 """
 >> Demoness
 > Copyright (c) 2019 Xithrius
@@ -21,6 +23,8 @@ import aiohttp
 import traceback
 import datetime
 import os
+import bs4
+import functools
 
 from discord.ext import commands as comms
 import discord
@@ -128,12 +132,24 @@ class Robot(comms.Bot):
             An embed object.
 
         """
-        desc.append(f'[`link`]({url})')
+        if isinstance(desc, dict):
+            desc = [f'[`{k}`]({v}' for k, v in desc.items()]
+        else:
+            desc.append(f'[`link`]({url})')
         e = discord.Embed(title='', description='\n'.join(y for y in desc),
                           timestamp=now(), colour=0xc27c0e)
         e.set_footer(text=f'discord.py v{discord.__version__}',
                      icon_url='https://i.imgur.com/RPrw70n.png')
         return e
+
+    def html_parser(self, url):
+        """Asynchronously uses BeautifulSoup to parse html
+
+        Returns:
+            A Dictionary of items
+
+        """
+        pass
 
     """ Events """
 
@@ -415,6 +431,66 @@ class Main(comms.Cog, command_attrs=dict(case_insensitive=True)):
                 except discord.errors.HTTPException:
                     pass
                 await asyncio.sleep(1.25)
+
+    @comms.command()
+    async def reddit(self, ctx, status, interval, subreddit):
+        """Sending 5 posts from a subreddit at a set interval and status.
+
+        Args:
+            status (str): The category the post should be in of the subreddit.
+            interval (str): The time interval that the post should be in.
+            subreddit (str): The subreddit that the posts should be found in.
+
+        Returns:
+            5 posts within 5 seconds, to not go above the API rate.
+
+        Raises:
+            Possible errors if subreddit cannot be found.
+
+        """
+        statuses = ['top', 'hot']
+        if status.lower() not in statuses:
+            raise ValueError('Set status is not defined as "top" or "hot".')
+
+        intervals = ['today', 'week', 'month', 'year', 'all']
+        if interval.lower() not in intervals:
+            raise ValueError('')
+        
+        if ['r/', '/r/'] in subreddit:
+            subreddit = subreddit[subreddit.index('/'):]
+
+        url = f'https://www.reddit.com/r/{subreddit}/{status}/.json?t={interval}'
+
+        await ctx.send('Sending 5 posts...')
+        await asyncio.sleep(2)
+
+        for post in range(info):
+            await ctx.send('')
+            await asyncio.sleep(1)
+
+    @comms.command()
+    async def sauce(self, ctx, url: None):
+        """Gets the SAUCE for an image (nsfw, mostly)
+
+        Args:
+            url (str): if none, url is extracted from context.
+        
+        Returns:
+            An embed with the sauce(s) of the image
+
+        Raises:
+            An error when sauce cannot be found or server cannot be reached.
+
+        """
+        url = f'http://saucenao.com/search.php?db=999&url={url}'
+        
+        async with self.bot.session.get(url) as r:
+            assert r.status == 200
+            t = await r.text()
+            func = functools.partial(self.bot.html_parser, t)
+            info = await self.bot.loop.run_in_executor(None, func)
+        
+        e = self.bot.embed
 
 
 if __name__ == "__main__":

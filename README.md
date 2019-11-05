@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-    <a href="https://discordapp.com/oauth2/authorize?client_id=637541370449362944&scope=bot&permissions=54381760">Invite</a> -
+    <a href="https://discordapp.com/oauth2/authorize?client_id=637541370449362944&scope=bot&permissions=379968">Invite</a> -
     <a href="#commands">Information</a> -
     <a href="#changelog">Changelog</a>
 </p>
