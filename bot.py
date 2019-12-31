@@ -1,16 +1,13 @@
-#!/usr/bin/python3
-
 '''
 >> Demoness
 > Copyright (c) 2019 Xithrius
 > MIT license, Refer to LICENSE for more info
 
-Running the bot (Linux ATM):
-    First time usage:
-        $ py -3 -m pip install --user -r requirements.txt
-        $ chmod +x bot.py
+Running the bot:
+    First time usage (python 3.7+):
+        $ python -m pip install --user -r requirements.txt
     Starting the bot:
-        $ ./bot.py
+        $ python bot.py
 '''
 
 
@@ -40,6 +37,7 @@ class Demoness(comms.Bot):
 
     async def create_connections(self):
         self.session = aiohttp.ClientSession()
+
 
 if __name__ == "__main__":
     bot = Demoness(command_prefix=comms.when_mentioned_or('.'),
